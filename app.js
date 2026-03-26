@@ -35,9 +35,10 @@ async function sendToDiscord(body) {
   const userId = body.userId || "-";
   const placeId = body.placeId || "-";
   const placeName = body.placeName || "-";
-  const jobId = body.jobId && String(body.jobId).trim() !== ""
-    ? body.jobId
-    : "Studio / Tidak tersedia";
+  const jobId =
+    body.jobId && String(body.jobId).trim() !== ""
+      ? body.jobId
+      : "Studio / Tidak tersedia";
   const playerCount = body.playerCount ?? "-";
 
   const dateObj = body.eventAt ? new Date(body.eventAt) : null;
@@ -62,46 +63,14 @@ async function sendToDiscord(body) {
           : "Admin/Target Masuk Server",
         color: isLeave ? 15158332 : 5763719,
         fields: [
-          {
-            name: "Username",
-            value: `\`${username}\``,
-            inline: true
-          },
-          {
-            name: "Display Name",
-            value: `\`${displayName}\``,
-            inline: true
-          },
-          {
-            name: "Role",
-            value: `\`${role}\``,
-            inline: true
-          },
-          {
-            name: "UserId",
-            value: `\`${userId}\``,
-            inline: true
-          },
-          {
-            name: "PlaceId",
-            value: `\`${placeId}\``,
-            inline: false
-          },
-          {
-            name: "Place Name",
-            value: `\`${placeName}\``,
-            inline: false
-          },
-          {
-            name: "JobId",
-            value: `\`${jobId}\``,
-            inline: false
-          },
-          {
-            name: "Total Player Server",
-            value: `\`${playerCount}\``,
-            inline: true
-          },
+          { name: "Username", value: `\`${username}\``, inline: true },
+          { name: "Display Name", value: `\`${displayName}\``, inline: true },
+          { name: "Role", value: `\`${role}\``, inline: true },
+          { name: "UserId", value: `\`${userId}\``, inline: true },
+          { name: "PlaceId", value: `\`${placeId}\``, inline: false },
+          { name: "Place Name", value: `\`${placeName}\``, inline: false },
+          { name: "JobId", value: `\`${jobId}\``, inline: false },
+          { name: "Total Player Server", value: `\`${playerCount}\``, inline: true },
           {
             name: isLeave ? "Waktu Keluar" : "Waktu Masuk",
             value: `\`${formattedTime}\``,
@@ -133,6 +102,30 @@ async function sendToDiscord(body) {
   if (!response.ok) {
     throw new Error(`Discord ${response.status}: ${text}`);
   }
+}
+
+function acceptRoblox(req, res) {
+  const auth = req.headers["x-shared-secret"] || "";
+
+  console.log("HEADER LEN:", auth.length);
+  console.log("ENV LEN:", SHARED_SECRET.length);
+  console.log("BODY:", JSON.stringify(req.body));
+
+  if (!BYPASS_AUTH && (!SHARED_SECRET || auth !== SHARED_SECRET)) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+
+  const payload = req.body || {};
+
+  // balas cepat ke Roblox dulu
+  res.status(200).json({ ok: true, queued: true });
+
+  // kirim ke Discord di background
+  setImmediate(() => {
+    sendToDiscord(payload).catch((err) => {
+      console.error("DISCORD SEND ERROR:", err && err.stack ? err.stack : String(err));
+    });
+  });
 }
 
 app.post("/", acceptRoblox);
