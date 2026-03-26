@@ -6,17 +6,18 @@ app.use(express.json());
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 const SHARED_SECRET = process.env.SHARED_SECRET;
 
+app.use((req, res, next) => {
+  console.log("REQ MASUK:", req.method, req.url);
+  next();
+});
+
 // Health check
 app.get("/", (req, res) => {
   res.send("Relay aktif bro ✅");
 });
 
-app.get("/relay", (req, res) => {
-  res.send("Relay aktif bro ✅");
-});
-
-app.get("/relay/", (req, res) => {
-  res.send("Relay aktif bro ✅");
+app.get("/roblox/join-log", (req, res) => {
+  res.send("Endpoint join-log siap bro ✅");
 });
 
 async function handleJoinLog(req, res) {
@@ -66,59 +67,21 @@ async function handleJoinLog(req, res) {
       embeds: [
         {
           title: isLeave
-            ? "\uD83D\uDD34 Admin/Target Keluar Server"
-            : "\uD83D\uDFE2 Admin/Target Masuk Server",
+            ? "🔴 Admin/Target Keluar Server"
+            : "🟢 Admin/Target Masuk Server",
           color: isLeave ? 15158332 : 5763719,
           fields: [
-            {
-              name: "Username",
-              value: username ? `\`${username}\`` : "`-`",
-              inline: true
-            },
-            {
-              name: "Display Name",
-              value: displayName ? `\`${displayName}\`` : "`-`",
-              inline: true
-            },
-            {
-              name: "Role",
-              value: role ? `\`${role}\`` : "`Unknown`",
-              inline: true
-            },
-            {
-              name: "UserId",
-              value: userId ? `\`${userId}\`` : "`-`",
-              inline: true
-            },
-            {
-              name: "PlaceId",
-              value: placeId ? `\`${placeId}\`` : "`-`",
-              inline: false
-            },
-            {
-              name: "Place Name",
-              value: placeName ? `\`${placeName}\`` : "`-`",
-              inline: false
-            },
-            {
-              name: "JobId",
-              value: formattedJobId,
-              inline: false
-            },
-            {
-              name: "Total Player Server",
-              value: typeof playerCount === "number" ? `\`${playerCount}\`` : "`-`",
-              inline: true
-            },
-            {
-              name: isLeave ? "Waktu Keluar" : "Waktu Masuk",
-              value: `\`${formattedTime}\``,
-              inline: false
-            }
+            { name: "Username", value: username ? `\`${username}\`` : "`-`", inline: true },
+            { name: "Display Name", value: displayName ? `\`${displayName}\`` : "`-`", inline: true },
+            { name: "Role", value: role ? `\`${role}\`` : "`Unknown`", inline: true },
+            { name: "UserId", value: userId ? `\`${userId}\`` : "`-`", inline: true },
+            { name: "PlaceId", value: placeId ? `\`${placeId}\`` : "`-`", inline: false },
+            { name: "Place Name", value: placeName ? `\`${placeName}\`` : "`-`", inline: false },
+            { name: "JobId", value: formattedJobId, inline: false },
+            { name: "Total Player Server", value: typeof playerCount === "number" ? `\`${playerCount}\`` : "`-`", inline: true },
+            { name: isLeave ? "Waktu Keluar" : "Waktu Masuk", value: `\`${formattedTime}\``, inline: false }
           ],
-          footer: {
-            text: "Roblox Join/Leave Logger"
-          },
+          footer: { text: "Roblox Join/Leave Logger" },
           timestamp: new Date().toISOString()
         }
       ]
@@ -126,9 +89,7 @@ async function handleJoinLog(req, res) {
 
     const response = await fetch(DISCORD_WEBHOOK_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(discordPayload)
     });
 
@@ -143,7 +104,8 @@ async function handleJoinLog(req, res) {
   }
 }
 
-// Support dua kemungkinan path
+// Support semua kemungkinan path
+app.post("/", handleJoinLog);
 app.post("/roblox/join-log", handleJoinLog);
 app.post("/relay/roblox/join-log", handleJoinLog);
 
