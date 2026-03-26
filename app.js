@@ -7,7 +7,7 @@ const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || "";
 const SHARED_SECRET = process.env.SHARED_SECRET || "";
 
 // sementara bypass auth dulu
-const BYPASS_AUTH = true;
+const BYPASS_AUTH = false;
 
 app.use((req, res, next) => {
   console.log("REQ MASUK:", req.method, req.url);
