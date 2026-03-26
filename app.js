@@ -4,10 +4,6 @@ const app = express();
 app.use(express.json());
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
-const SHARED_SECRET = process.env.SHARED_SECRET;
-
-// true = auth dimatiin sementara buat ngetes
-const BYPASS_AUTH = true;
 
 app.use((req, res, next) => {
   console.log("REQ MASUK:", req.method, req.url);
@@ -15,7 +11,7 @@ app.use((req, res, next) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("Relay aktif bro");
+  res.send("Relay hidup bro");
 });
 
 app.get("/roblox/join-log", (req, res) => {
@@ -24,24 +20,18 @@ app.get("/roblox/join-log", (req, res) => {
 
 async function handleJoinLog(req, res) {
   try {
-    const auth = req.headers["x-shared-secret"];
-
-    console.log("HEADER ADA:", !!auth);
-    console.log("HEADER LEN:", (auth || "").length);
-    console.log("ENV LEN:", (SHARED_SECRET || "").length);
-    console.log("MATCH:", auth === SHARED_SECRET);
     console.log("BODY:", JSON.stringify(req.body));
 
-    if (!BYPASS_AUTH && (!SHARED_SECRET || auth !== SHARED_SECRET)) {
-      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    if (!DISCORD_WEBHOOK_URL) {
+      return res.status(500).json({ ok: false, error: "DISCORD_WEBHOOK_URL belum diset" });
     }
 
     const {
       eventType,
-      userId,
       username,
       displayName,
       role,
+      userId,
       placeId,
       placeName,
       jobId,
@@ -49,100 +39,27 @@ async function handleJoinLog(req, res) {
       eventAt
     } = req.body || {};
 
-    const dateObj = eventAt ? new Date(eventAt) : null;
-
-    const formattedTime = dateObj
-      ? new Intl.DateTimeFormat("id-ID", {
-          timeZone: "Asia/Jakarta",
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit"
-        }).format(dateObj) + " WIB"
-      : "Tidak diketahui";
-
-    const formattedJobId =
-      jobId && String(jobId).trim() !== ""
-        ? `\`${jobId}\``
-        : "`Studio / Tidak tersedia`";
-
-    const isLeave = eventType === "leave";
-
-    const discordPayload = {
-      username: "Absensi",
-      embeds: [
-        {
-          title: isLeave
-            ? "Admin/Target Keluar Server"
-            : "Admin/Target Masuk Server",
-          color: isLeave ? 15158332 : 5763719,
-          fields: [
-            {
-              name: "Username",
-              value: username ? `\`${username}\`` : "`-`",
-              inline: true
-            },
-            {
-              name: "Display Name",
-              value: displayName ? `\`${displayName}\`` : "`-`",
-              inline: true
-            },
-            {
-              name: "Role",
-              value: role ? `\`${role}\`` : "`Unknown`",
-              inline: true
-            },
-            {
-              name: "UserId",
-              value: userId ? `\`${userId}\`` : "`-`",
-              inline: true
-            },
-            {
-              name: "PlaceId",
-              value: placeId ? `\`${placeId}\`` : "`-`",
-              inline: false
-            },
-            {
-              name: "Place Name",
-              value: placeName ? `\`${placeName}\`` : "`-`",
-              inline: false
-            },
-            {
-              name: "JobId",
-              value: formattedJobId,
-              inline: false
-            },
-            {
-              name: "Total Player Server",
-              value: typeof playerCount === "number" ? `\`${playerCount}\`` : "`-`",
-              inline: true
-            },
-            {
-              name: isLeave ? "Waktu Keluar" : "Waktu Masuk",
-              value: `\`${formattedTime}\``,
-              inline: false
-            }
-          ],
-          footer: {
-            text: "Roblox Join/Leave Logger"
-          },
-          timestamp: new Date().toISOString()
-        }
-      ]
-    };
-
-    if (!DISCORD_WEBHOOK_URL) {
-      return res.status(500).json({ ok: false, error: "DISCORD_WEBHOOK_URL belum diset" });
-    }
+    const content =
+      `${eventType === "leave" ? "🔴" : "🟢"} ${eventType === "leave" ? "Keluar" : "Masuk"} Server\n` +
+      `Username: ${username || "-"}\n` +
+      `Display Name: ${displayName || "-"}\n` +
+      `Role: ${role || "-"}\n` +
+      `UserId: ${userId || "-"}\n` +
+      `PlaceId: ${placeId || "-"}\n` +
+      `Place Name: ${placeName || "-"}\n` +
+      `JobId: ${jobId || "-"}\n` +
+      `Player Count: ${playerCount ?? "-"}\n` +
+      `Waktu: ${eventAt || "-"}`;
 
     const response = await fetch(DISCORD_WEBHOOK_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(discordPayload)
+      body: JSON.stringify({
+        username: "Absensi",
+        content
+      })
     });
 
     if (!response.ok) {
