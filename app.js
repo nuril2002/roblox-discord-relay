@@ -11,11 +11,23 @@ app.use((req, res, next) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("Relay hidup bro");
+  res.status(200).send("Relay hidup bro");
 });
 
 app.get("/roblox/join-log", (req, res) => {
-  res.send("Endpoint join-log siap bro");
+  res.status(200).send("Endpoint join-log siap bro");
+});
+
+app.post("/", async (req, res) => {
+  return handleJoinLog(req, res);
+});
+
+app.post("/roblox/join-log", async (req, res) => {
+  return handleJoinLog(req, res);
+});
+
+app.post("/relay/roblox/join-log", async (req, res) => {
+  return handleJoinLog(req, res);
 });
 
 async function handleJoinLog(req, res) {
@@ -23,35 +35,35 @@ async function handleJoinLog(req, res) {
     console.log("BODY:", JSON.stringify(req.body));
 
     if (!DISCORD_WEBHOOK_URL) {
-      return res.status(500).json({ ok: false, error: "DISCORD_WEBHOOK_URL belum diset" });
+      console.log("ERROR: DISCORD_WEBHOOK_URL kosong");
+      return res.status(500).json({ ok: false, error: "DISCORD_WEBHOOK_URL kosong" });
     }
 
-    const {
-      eventType,
-      username,
-      displayName,
-      role,
-      userId,
-      placeId,
-      placeName,
-      jobId,
-      playerCount,
-      eventAt
-    } = req.body || {};
+    const body = req.body || {};
+    const eventType = body.eventType || "join";
+    const username = body.username || "-";
+    const displayName = body.displayName || "-";
+    const role = body.role || "-";
+    const userId = body.userId || "-";
+    const placeId = body.placeId || "-";
+    const placeName = body.placeName || "-";
+    const jobId = body.jobId || "-";
+    const playerCount = body.playerCount ?? "-";
+    const eventAt = body.eventAt || "-";
 
     const content =
-      `${eventType === "leave" ? "🔴" : "🟢"} ${eventType === "leave" ? "Keluar" : "Masuk"} Server\n` +
-      `Username: ${username || "-"}\n` +
-      `Display Name: ${displayName || "-"}\n` +
-      `Role: ${role || "-"}\n` +
-      `UserId: ${userId || "-"}\n` +
-      `PlaceId: ${placeId || "-"}\n` +
-      `Place Name: ${placeName || "-"}\n` +
-      `JobId: ${jobId || "-"}\n` +
-      `Player Count: ${playerCount ?? "-"}\n` +
-      `Waktu: ${eventAt || "-"}`;
+      `${eventType === "leave" ? "KELUAR" : "MASUK"} SERVER\n` +
+      `Username: ${username}\n` +
+      `Display Name: ${displayName}\n` +
+      `Role: ${role}\n` +
+      `UserId: ${userId}\n` +
+      `PlaceId: ${placeId}\n` +
+      `Place Name: ${placeName}\n` +
+      `JobId: ${jobId}\n` +
+      `Player Count: ${playerCount}\n` +
+      `Waktu: ${eventAt}`;
 
-    const response = await fetch(DISCORD_WEBHOOK_URL, {
+    const discordResponse = await fetch(DISCORD_WEBHOOK_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -62,22 +74,20 @@ async function handleJoinLog(req, res) {
       })
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.log("DISCORD ERROR:", text);
+    console.log("DISCORD STATUS:", discordResponse.status);
+
+    if (!discordResponse.ok) {
+      const text = await discordResponse.text();
+      console.log("DISCORD ERROR BODY:", text);
       return res.status(500).json({ ok: false, error: text });
     }
 
-    return res.json({ ok: true, sentToDiscord: true });
+    return res.status(200).json({ ok: true });
   } catch (err) {
-    console.log("SERVER ERROR:", String(err));
+    console.log("SERVER ERROR:", err && err.stack ? err.stack : String(err));
     return res.status(500).json({ ok: false, error: String(err) });
   }
 }
-
-app.post("/", handleJoinLog);
-app.post("/roblox/join-log", handleJoinLog);
-app.post("/relay/roblox/join-log", handleJoinLog);
 
 const port = process.env.PORT || 3000;
 app.listen(port, "0.0.0.0", () => {
