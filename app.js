@@ -1,3 +1,27 @@
+const express = require("express");
+
+const app = express();
+app.use(express.json());
+
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || "";
+const SHARED_SECRET = process.env.SHARED_SECRET || "";
+
+// sementara bypass auth dulu
+const BYPASS_AUTH = true;
+
+app.use((req, res, next) => {
+  console.log("REQ MASUK:", req.method, req.url);
+  next();
+});
+
+app.get("/", (req, res) => {
+  res.status(200).send("Relay hidup bro");
+});
+
+app.get("/roblox/join-log", (req, res) => {
+  res.status(200).send("Endpoint join-log siap bro");
+});
+
 async function sendToDiscord(body) {
   if (!DISCORD_WEBHOOK_URL) {
     throw new Error("DISCORD_WEBHOOK_URL kosong");
@@ -110,3 +134,12 @@ async function sendToDiscord(body) {
     throw new Error(`Discord ${response.status}: ${text}`);
   }
 }
+
+app.post("/", acceptRoblox);
+app.post("/roblox/join-log", acceptRoblox);
+app.post("/relay/roblox/join-log", acceptRoblox);
+
+const port = process.env.PORT || 3000;
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Relay jalan di port ${port}`);
+});
