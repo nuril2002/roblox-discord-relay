@@ -11,83 +11,54 @@ app.use((req, res, next) => {
 });
 
 app.get("/", (req, res) => {
-  res.status(200).send("Relay hidup bro");
+  res.send("Relay hidup bro");
 });
 
 app.get("/roblox/join-log", (req, res) => {
-  res.status(200).send("Endpoint join-log siap bro");
+  res.send("Endpoint join-log siap bro");
 });
 
-app.post("/", async (req, res) => {
-  return handleJoinLog(req, res);
-});
-
-app.post("/roblox/join-log", async (req, res) => {
-  return handleJoinLog(req, res);
-});
-
-app.post("/relay/roblox/join-log", async (req, res) => {
-  return handleJoinLog(req, res);
-});
-
-async function handleJoinLog(req, res) {
+// TEST: browser -> Railway -> Discord
+app.get("/test-discord", async (req, res) => {
   try {
-    console.log("BODY:", JSON.stringify(req.body));
-
     if (!DISCORD_WEBHOOK_URL) {
-      console.log("ERROR: DISCORD_WEBHOOK_URL kosong");
-      return res.status(500).json({ ok: false, error: "DISCORD_WEBHOOK_URL kosong" });
+      return res.status(500).send("DISCORD_WEBHOOK_URL kosong");
     }
 
-    const body = req.body || {};
-    const eventType = body.eventType || "join";
-    const username = body.username || "-";
-    const displayName = body.displayName || "-";
-    const role = body.role || "-";
-    const userId = body.userId || "-";
-    const placeId = body.placeId || "-";
-    const placeName = body.placeName || "-";
-    const jobId = body.jobId || "-";
-    const playerCount = body.playerCount ?? "-";
-    const eventAt = body.eventAt || "-";
-
-    const content =
-      `${eventType === "leave" ? "KELUAR" : "MASUK"} SERVER\n` +
-      `Username: ${username}\n` +
-      `Display Name: ${displayName}\n` +
-      `Role: ${role}\n` +
-      `UserId: ${userId}\n` +
-      `PlaceId: ${placeId}\n` +
-      `Place Name: ${placeName}\n` +
-      `JobId: ${jobId}\n` +
-      `Player Count: ${playerCount}\n` +
-      `Waktu: ${eventAt}`;
-
-    const discordResponse = await fetch(DISCORD_WEBHOOK_URL, {
+    const response = await fetch(DISCORD_WEBHOOK_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         username: "Absensi",
-        content
+        content: "Test dari Railway bro"
       })
     });
 
-    console.log("DISCORD STATUS:", discordResponse.status);
-
-    if (!discordResponse.ok) {
-      const text = await discordResponse.text();
-      console.log("DISCORD ERROR BODY:", text);
-      return res.status(500).json({ ok: false, error: text });
-    }
-
-    return res.status(200).json({ ok: true });
+    const text = await response.text();
+    return res.status(response.ok ? 200 : 500).send(
+      `Discord status=${response.status} body=${text}`
+    );
   } catch (err) {
-    console.log("SERVER ERROR:", err && err.stack ? err.stack : String(err));
-    return res.status(500).json({ ok: false, error: String(err) });
+    console.log("TEST DISCORD ERROR:", String(err));
+    return res.status(500).send(String(err));
   }
+});
+
+// TEST: Roblox POST cuma dibales sukses dulu
+function handleTest(req, res) {
+  console.log("BODY:", JSON.stringify(req.body));
+  return res.json({
+    ok: true,
+    message: "POST masuk ke Railway",
+    path: req.path
+  });
 }
+
+app.post("/", handleTest);
+app.post("/roblox/join-log", handleTest);
+app.post("/relay/roblox/join-log", handleTest);
 
 const port = process.env.PORT || 3000;
 app.listen(port, "0.0.0.0", () => {
