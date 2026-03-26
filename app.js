@@ -22,6 +22,11 @@ app.get("/roblox/join-log", (req, res) => {
 
 async function handleJoinLog(req, res) {
   try {
+    console.log("HEADER ADA:", !!req.headers["x-shared-secret"]);
+    console.log("HEADER LEN:", (req.headers["x-shared-secret"] || "").length);
+    console.log("ENV LEN:", (process.env.SHARED_SECRET || "").length);
+    console.log("MATCH:", req.headers["x-shared-secret"] === process.env.SHARED_SECRET);
+
     const auth = req.headers["x-shared-secret"];
 
     if (!SHARED_SECRET || auth !== SHARED_SECRET) {
