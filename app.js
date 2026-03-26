@@ -55,7 +55,7 @@ async function sendToDiscord(body) {
     : "-";
 
   const discordPayload = {
-    username: "Absensi",
+    username: "Prabowo Subianto",
     embeds: [
       {
         title: isLeave
