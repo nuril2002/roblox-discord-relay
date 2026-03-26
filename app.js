@@ -3,119 +3,31 @@ const express = require("express");
 const app = express();
 app.use(express.json());
 
-const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
-const SHARED_SECRET = process.env.SHARED_SECRET;
-
-// BYPASS AUTH SEMENTARA
-const BYPASS_AUTH = true;
-
 app.use((req, res, next) => {
   console.log("REQ MASUK:", req.method, req.url);
   next();
 });
 
-// Health check
 app.get("/", (req, res) => {
-  res.send("Relay aktif bro ✅");
+  res.send("Relay test hidup bro ✅");
 });
 
 app.get("/roblox/join-log", (req, res) => {
   res.send("Endpoint join-log siap bro ✅");
 });
 
-async function handleJoinLog(req, res) {
-  try {
-    console.log("HEADER ADA:", !!req.headers["x-shared-secret"]);
-    console.log("HEADER LEN:", (req.headers["x-shared-secret"] || "").length);
-    console.log("ENV LEN:", (process.env.SHARED_SECRET || "").length);
-    console.log("MATCH:", req.headers["x-shared-secret"] === process.env.SHARED_SECRET);
-
-    const auth = req.headers["x-shared-secret"];
-
-    if (!BYPASS_AUTH && (!SHARED_SECRET || auth !== SHARED_SECRET)) {
-      return res.status(401).json({ ok: false, error: "Unauthorized" });
-    }
-
-    const {
-      eventType,
-      userId,
-      username,
-      displayName,
-      role,
-      placeId,
-      placeName,
-      jobId,
-      playerCount,
-      eventAt
-    } = req.body || {};
-
-    const dateObj = eventAt ? new Date(eventAt) : null;
-
-    const formattedTime = dateObj
-      ? new Intl.DateTimeFormat("id-ID", {
-          timeZone: "Asia/Jakarta",
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit"
-        }).format(dateObj) + " WIB"
-      : "Tidak diketahui";
-
-    const formattedJobId =
-      jobId && String(jobId).trim() !== ""
-        ? `\`${jobId}\``
-        : "`Studio / Tidak tersedia`";
-
-    const isLeave = eventType === "leave";
-
-    const discordPayload = {
-      username: "Absensi",
-      embeds: [
-        {
-          title: isLeave
-            ? "🔴 Admin/Target Keluar Server"
-            : "🟢 Admin/Target Masuk Server",
-          color: isLeave ? 15158332 : 5763719,
-          fields: [
-            { name: "Username", value: username ? `\`${username}\`` : "`-`", inline: true },
-            { name: "Display Name", value: displayName ? `\`${displayName}\`` : "`-`", inline: true },
-            { name: "Role", value: role ? `\`${role}\`` : "`Unknown`", inline: true },
-            { name: "UserId", value: userId ? `\`${userId}\`` : "`-`", inline: true },
-            { name: "PlaceId", value: placeId ? `\`${placeId}\`` : "`-`", inline: false },
-            { name: "Place Name", value: placeName ? `\`${placeName}\`` : "`-`", inline: false },
-            { name: "JobId", value: formattedJobId, inline: false },
-            { name: "Total Player Server", value: typeof playerCount === "number" ? `\`${playerCount}\`` : "`-`", inline: true },
-            { name: isLeave ? "Waktu Keluar" : "Waktu Masuk", value: `\`${formattedTime}\``, inline: false }
-          ],
-          footer: { text: "Roblox Join/Leave Logger" },
-          timestamp: new Date().toISOString()
-        }
-      ]
-    };
-
-    const response = await fetch(DISCORD_WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(discordPayload)
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      return res.status(500).json({ ok: false, error: text });
-    }
-
-    return res.json({ ok: true });
-  } catch (err) {
-    return res.status(500).json({ ok: false, error: String(err) });
-  }
+function handleTest(req, res) {
+  console.log("BODY:", JSON.stringify(req.body));
+  return res.json({
+    ok: true,
+    message: "POST masuk ke Railway",
+    path: req.path
+  });
 }
 
-// Support semua kemungkinan path
-app.post("/", handleJoinLog);
-app.post("/roblox/join-log", handleJoinLog);
-app.post("/relay/roblox/join-log", handleJoinLog);
+app.post("/", handleTest);
+app.post("/roblox/join-log", handleTest);
+app.post("/relay/roblox/join-log", handleTest);
 
 const port = process.env.PORT || 3000;
 app.listen(port, "0.0.0.0", () => {
