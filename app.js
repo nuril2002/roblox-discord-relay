@@ -6,6 +6,9 @@ app.use(express.json());
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 const SHARED_SECRET = process.env.SHARED_SECRET;
 
+// BYPASS AUTH SEMENTARA
+const BYPASS_AUTH = true;
+
 app.use((req, res, next) => {
   console.log("REQ MASUK:", req.method, req.url);
   next();
@@ -29,7 +32,7 @@ async function handleJoinLog(req, res) {
 
     const auth = req.headers["x-shared-secret"];
 
-    if (!SHARED_SECRET || auth !== SHARED_SECRET) {
+    if (!BYPASS_AUTH && (!SHARED_SECRET || auth !== SHARED_SECRET)) {
       return res.status(401).json({ ok: false, error: "Unauthorized" });
     }
 
