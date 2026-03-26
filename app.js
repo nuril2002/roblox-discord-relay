@@ -148,6 +148,6 @@ app.post("/roblox/join-log", handleJoinLog);
 app.post("/relay/roblox/join-log", handleJoinLog);
 
 const port = process.env.PORT || 3000;
-app.listen(port, "127.0.0.1", () => {
+app.listen(port, "0.0.0.0", () => {
   console.log(`Relay jalan di port ${port}`);
 });
