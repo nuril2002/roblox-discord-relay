@@ -38,7 +38,7 @@ async function sendToDiscord(body) {
   const jobId =
     body.jobId && String(body.jobId).trim() !== ""
       ? body.jobId
-      : "Studio / Tidak tersedia";
+      : "Roblox Studio";
   const playerCount = body.playerCount ?? "-";
 
   const dateObj = body.eventAt ? new Date(body.eventAt) : null;
